@@ -1,0 +1,13 @@
+title: Trimps tools
+email: gr1mg4r@gmail.com
+description: >-
+  Trimps tools
+baseurl: ""
+url: ""
+twitter_username: Yurhon
+github_username: Grimy
+
+markdown: kramdown
+theme: minima
+plugins:
+  - jekyll-feed
