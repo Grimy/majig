@@ -1,5 +1,3 @@
-"use strict";
-
 import { game, show_alert, $, input, prettify } from "./trimps";
 const { abs, ceil, floor, log, max, min, pow, round, sqrt } = Math;
 
@@ -324,7 +322,6 @@ function map_cost(mods, level) {
 	mods += level;
 	return mods * pow(1.14, mods) * level * pow(1.03 + level / 50000, level) / 42.75;
 }
-;
 
 // Return a list of efficiency stats for all sensible zones
 function stats(g) {
