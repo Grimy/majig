@@ -8,6 +8,3 @@ twitter_username: Yurhon
 github_username: Grimy
 
 markdown: kramdown
-theme: minima
-plugins:
-  - jekyll-feed
