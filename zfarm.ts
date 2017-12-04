@@ -50,7 +50,7 @@ function read_save() {
 	} else if (challenge === "Balance" || challenge === "Meditate" || challenge === "Toxicity") {
 		enemyHealth *= 2;
 	} else if (challenge === "Daily") {
-		let daily = (mod) => game.global.dailyChallenge[mod] ? game.global.dailyChallenge[mod].strength : 0;
+		let daily = (mod: string) => game.global.dailyChallenge[mod] ? game.global.dailyChallenge[mod].strength : 0;
 		enemyHealth *= 1 + 0.2 * daily('badHealth');
 		enemyHealth *= 1 + 0.3 * daily('badMapHealth');
 		minFluct -= daily('minDamage') ? 0.09 + 0.01 * daily('minDamage') : 0;
@@ -118,8 +118,8 @@ const parse_inputs = () => ({
 });
 
 // Return info about the best zone for each stance
-function get_best(stats, stances) {
-	let best = { overall: "", stance: "", second: "", second_stance: "", ratio: 0 };
+function get_best(stats: any[], stances: string) {
+	let best: any = { overall: "", stance: "", second: "", second_stance: "", ratio: 0 };
 
 	/* jshint loopfunc:true */
 	for (let stance of stances) {
@@ -139,7 +139,7 @@ function get_best(stats, stances) {
 	return best;
 }
 
-function display(results) {
+function display(results: any[]) {
 	let [stats, stances] = results;
 
 	if (stats.length === 0) {
@@ -216,7 +216,9 @@ function main() {
 
 const max_ticks = 864000; // One day
 
-const biomes = {
+let test: number[] = [1, 2];
+
+const biomes: {[key: string]: number[]} = {
 	all: [0.7, 1.3, 1.3, 1, 0.7, 0.8, 1.1],
 	gardens: [0.95, 0.95, 1, 0.8, 1.3, 1.1, 1.4],
 	sea: [0.9, 1.1, 1.1],
@@ -235,7 +237,7 @@ function rng() {
 }
 
 // Base HP (before imp modifiers) for an enemy at the given position (zone + cell).
-function enemy_hp(g, zone, cell) {
+function enemy_hp(g: any, zone: number, cell: number) {
 	let amt = 14.3 * sqrt(zone * pow(3.265, zone)) - 12.1;
 	amt *= zone < 60 ? (3 + (3 / 110) * cell) : (5 + 0.08 * cell) * pow(1.1, zone - 59);
 	if (g.zone >= 230)
@@ -244,7 +246,7 @@ function enemy_hp(g, zone, cell) {
 }
 
 // Simulate farming at the given zone for a fixed time, and return the number cells cleared.
-function simulate(zone, g) {
+function simulate(g: any, zone: number) {
 	let titimp = 0;
 	let ok_dmg = 0;
 	let cell = 0;
@@ -294,8 +296,8 @@ function simulate(zone, g) {
 }
 
 // Return efficiency stats for the given zone
-function zone_stats(zone, stances, g) {
-	let result = {
+function zone_stats(zone: number, stances: string, g: any) {
+	let result: any = {
 		zone: 'z' + zone,
 		value: 0,
 		stance: '',
@@ -303,9 +305,9 @@ function zone_stats(zone, stances, g) {
 	};
 
 	for (let stance of stances) {
-		g.atk = g.attack * ({ X: 1, D: 4, S: 0.5 })[stance];
-		let speed = simulate(zone, g);
-		let value = speed * result.loot * ({ X: 1, D: 1, S: 2 })[stance];
+		g.atk = g.attack * (stance == 'D' ? 4 : stance == 'X' ? 1 : 0.5);
+		let speed = simulate(g, zone);
+		let value = speed * result.loot * (stance == 'S' ? 2 : 1);
 		result[stance] = { speed, value };
 
 		if (value > result.value) {
@@ -317,13 +319,13 @@ function zone_stats(zone, stances, g) {
 	return result;
 }
 
-function map_cost(mods, level) {
+function map_cost(mods: number, level: number) {
 	mods += level;
 	return mods * pow(1.14, mods) * level * pow(1.03 + level / 50000, level) / 42.75;
 }
 
 // Return a list of efficiency stats for all sensible zones
-function stats(g) {
+function stats(g: any) {
 	let stats = [];
 	let stances = (g.zone < 70 ? 'X' : 'D') + (g.scry && g.zone >= 60 ? 'S' : '');
 

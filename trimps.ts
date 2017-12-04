@@ -8,19 +8,19 @@ declare var LZString: any;
 // HTML manipulation utilities
 ///
 
-const $ = selector => document.querySelector(selector);
-const $$ = selector => [].slice.apply(document.querySelectorAll(selector));
+const $ = (selector: string) => <any> document.querySelector(selector);
+const $$ = (selector: string) => [].slice.apply(document.querySelectorAll(selector));
 
-function remove(elem) {
-	elem.parentNode.removeChild(elem);
+function remove(elem: HTMLElement) {
+	elem.parentNode!.removeChild(elem);
 }
 
 function switch_theme() {
-	let light = $('#dark').disabled = !$('#dark').disabled;
-	localStorage.dark = light ? '' : '1';
+	let dark = $('#dark');
+	localStorage.dark = (dark.disabled = !dark.disabled) ? '' : '1';
 }
 
-function show_alert(style, message) {
+function show_alert(style: string, message: string) {
 	$('#alert').innerHTML +=
 		`<p class=${style}>
 			<span class=badge onclick='remove(this.parentNode)'>×</span>
@@ -32,27 +32,27 @@ function show_alert(style, message) {
 // Creating/loading share links
 ///
 
-function create_share(callback) {
+function create_share(callback: (url: string) => void) {
 	let share_string = localStorage.notation + ':';
-	share_string += $$('input,select').map(field => field.value.replace(':', '')).join(':');
+	share_string += $$('input,select').map((field: HTMLInputElement) => field.value.replace(':', '')).join(':');
 	let long_url = location.href.replace(/[#?].*/, '');
 	long_url += '?' + LZString.compressToBase64(share_string);
 	let url = 'https://api-ssl.bitly.com/v3/shorten?longUrl=' + encodeURIComponent(long_url);
 	url += '&login=grimy&apiKey=R_7ea82c1cec394d1ca5cf4da2a7f7ddd9';
 
-	callback = callback || (url => show_alert('ok', `Your share link is <a href=${url}>${url}`));
+	callback = callback || ((url: string) => show_alert('ok', `Your share link is <a href=${url}>${url}`));
 	let request = new XMLHttpRequest();
 	request.open('GET', url, true);
 	request.onload = () => callback(JSON.parse(request.responseText).data.url || long_url);
 	request.send();
 }
 
-function try_wrap(func) {
+function try_wrap(func: () => void) {
 	try {
 		func();
 	} catch (err) {
 		console.log(err);
-		create_share(url => show_alert('ko',
+		create_share((url: string) => show_alert('ko',
 		`Oops! It’s not your fault, but something went wrong. You can go pester the dev on
 		<a href=https://github.com/Grimy/Grimy.github.io/issues/new>GitHub</a> or
 		<a href=https://www.reddit.com/message/compose/?to=Grimy_>Reddit</a>, he’ll fix it.
@@ -64,15 +64,15 @@ function try_wrap(func) {
 function exit_share() {
 	history.pushState({}, '', 'perks.html');
 	$('textarea').onclick = null;
-	$$('[data-saved]').forEach(field => field.value = localStorage[field.id] || field.value);
+	$$('[data-saved]').forEach((field: HTMLInputElement) => field.value = localStorage[field.id] || field.value);
 }
 
-function load_share(str) {
+function load_share(str: string) {
 	let values = LZString.decompressFromBase64(str).split(':');
 	let notation = localStorage.notation;
 	localStorage.notation = values.shift();
 
-	$$('input,select').forEach(field => field.value = values.shift());
+	$$('input,select').forEach((field: HTMLInputElement) => field.value = values.shift());
 	$('textarea').onclick = exit_share;
 
 	// try_main();
@@ -97,7 +97,7 @@ const notations = [
 	'KMBTQaQiSxSpOcNoDcUdDdTdQadQidSxdSpdOdNdVUvDvTvQavQivSxvSpvOvNvTt'.split(/(?=[A-Z])/),
 ];
 
-function prettify(number) {
+function prettify(number: number): string {
 	if (number < 0)
 		return '-' + prettify(-number);
 
@@ -118,7 +118,7 @@ function prettify(number) {
 	return +number.toPrecision(3) + suffix;
 }
 
-function parse_suffixes(str) {
+function parse_suffixes(str: string) {
 	str = str.replace(/\*.*|[^--9+a-z]/gi, '');
 
 	let suffixes = notations[localStorage.notation === '3' ? 3 : 1];
@@ -128,11 +128,11 @@ function parse_suffixes(str) {
 	return +str;
 }
 
-function input(id) {
+function input(id: string) {
 	return parse_suffixes($('#' + id).value);
 }
 
-function check_input(field) {
+function check_input(field: HTMLInputElement) {
 	let ok = isFinite(parse_suffixes(field.value));
 	let notation = localStorage.notation === '3' ? 'alphabetic ' : '';
 	field.setCustomValidity(ok ? '' : `Invalid ${notation}number: ${field.value}`);
@@ -142,9 +142,9 @@ function check_input(field) {
 // Handling Trimps save data
 ///
 
-let game;
+let game: any;
 
-function handle_paste(ev) {
+function handle_paste(ev: ClipboardEvent) {
 	let save_string = ev.clipboardData.getData("text/plain").replace(/\s/g, '');
 
 	try {
@@ -176,7 +176,7 @@ window.onload = function () {
 	if (location.search)
 		load_share(location.search.substr(1));
 
-	$$('[data-saved]').forEach(field => {
+	$$('[data-saved]').forEach((field: HTMLInputElement) => {
 		if (field.type === 'checkbox') {
 			field.checked = localStorage[field.id] === 'true';
 			field.addEventListener('change', () => localStorage[field.id] = field.checked);
