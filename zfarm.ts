@@ -1,5 +1,4 @@
-import { game, show_alert, $, input, prettify } from "./trimps";
-const { abs, ceil, floor, log, max, min, pow, round, sqrt } = Math;
+/// <reference path="./trimps.ts"/>
 
 function read_save() {
 	let imps = 0;

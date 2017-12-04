@@ -1,18 +1,15 @@
 // trimps.js: some code common to Perky and zFarm
 
-import { LZString } from "./lz-string";
 const {abs, ceil, floor, log, max, min, pow, round, sqrt} = Math;
 
-interface Function { ():any; }
-declare var read_save: Function;
-declare var main: Function;
+declare var LZString: any;
 
 ///
 // HTML manipulation utilities
 ///
 
-export const $ = selector => document.querySelector(selector);
-export const $$ = selector => [].slice.apply(document.querySelectorAll(selector));
+const $ = selector => document.querySelector(selector);
+const $$ = selector => [].slice.apply(document.querySelectorAll(selector));
 
 function remove(elem) {
 	elem.parentNode.removeChild(elem);
@@ -23,7 +20,7 @@ function switch_theme() {
 	localStorage.dark = light ? '' : '1';
 }
 
-export function show_alert(style, message) {
+function show_alert(style, message) {
 	$('#alert').innerHTML +=
 		`<p class=${style}>
 			<span class=badge onclick='remove(this.parentNode)'>×</span>
@@ -50,9 +47,9 @@ function create_share(callback) {
 	request.send();
 }
 
-function try_main() {
+function try_wrap(func) {
 	try {
-		main();
+		func();
 	} catch (err) {
 		console.log(err);
 		create_share(url => show_alert('ko',
@@ -78,7 +75,7 @@ function load_share(str) {
 	$$('input,select').forEach(field => field.value = values.shift());
 	$('textarea').onclick = exit_share;
 
-	try_main();
+	// try_main();
 	localStorage.notation = notation || 1;
 }
 
@@ -100,7 +97,7 @@ const notations = [
 	'KMBTQaQiSxSpOcNoDcUdDdTdQadQidSxdSpdOdNdVUvDvTvQavQivSxvSpvOvNvTt'.split(/(?=[A-Z])/),
 ];
 
-export function prettify(number) {
+function prettify(number) {
 	if (number < 0)
 		return '-' + prettify(-number);
 
@@ -131,7 +128,7 @@ function parse_suffixes(str) {
 	return +str;
 }
 
-export function input(id) {
+function input(id) {
 	return parse_suffixes($('#' + id).value);
 }
 
@@ -145,7 +142,7 @@ function check_input(field) {
 // Handling Trimps save data
 ///
 
-export let game;
+let game;
 
 function handle_paste(ev) {
 	let save_string = ev.clipboardData.getData("text/plain").replace(/\s/g, '');
@@ -166,9 +163,6 @@ function handle_paste(ev) {
 
 	for (let m in game.talents)
 		game.talents[m] = game.talents[m].purchased;
-
-	read_save();
-	try_main();
 }
 
 window.onload = function () {

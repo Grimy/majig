@@ -1,34 +1,28 @@
 module Jekyll
-
 	class TsGenerator < Generator
 		safe true
 		priority :low
 
 		def generate(site)
-			ts_files = Array.new;
-
-			site.static_files.delete_if do |sf|
-				next if not File.extname(sf.path) == ".ts"
+			site.static_files = site.static_files.map { |sf|
+				next sf if not File.extname(sf.path) == ".ts"
 				ts_dir = File.dirname(sf.path.gsub(site.source, ""))
 				ts_name = File.basename(sf.path)
-				ts_files << TsFile.new(site, site.source, ts_dir, ts_name)
-				true
-			end
-
-			site.static_files.concat(ts_files)
+				TsFile.new(site, site.source, ts_dir, ts_name)
+			}
 		end
 	end
-
 
 	class TsFile < StaticFile
 		def initialize(site, base, dir, name)
 			super(site, base, dir, name, nil)
 			@tspath = File.join(base, dir, name)
+			@jspath = File.join(base, dir, '_site', name.sub('.ts', '.js'))
 		end
 
 		def write(dest)
-			puts "\e[35m#{@tspath}\e[m"
-			puts `tsc -t ES6 --outDir _site #{@tspath}`
+			puts "\n\e[35m#{@tspath}\e[m"
+			print `tsc -t ES5 --outFile #{@jspath} #{@tspath}`
 		end
 	end
 end

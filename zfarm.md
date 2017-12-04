@@ -3,12 +3,12 @@ layout: default
 title: zFarm
 ---
 
-<form class='flexbox' action='javascript:try_main()'>
+<form class='flexbox' action='javascript:try_wrap(main)'>
 	<fieldset class='box'>
 		<legend>Inputs</legend>
 
 		<label title='Export your Trimps save and paste it here'>
-			<textarea id='save' onfocus='this.value = ""' onpaste='handle_paste(event)'></textarea>
+			<textarea id='save' onfocus='this.value = ""' onpaste='handle_paste(event); read_save(); try_wrap(main)'></textarea>
 			Import save
 		</label>
 
@@ -134,6 +134,6 @@ title: zFarm
 	</fieldset>
 </form>
 
-<script src="/lz-string.js"></script>
+<script src="lz-string.js"></script>
 <script src="trimps.js"></script>
 <script src="zfarm.js"></script>
