@@ -154,7 +154,7 @@ function display(results: any[]) {
 	if (stances.length > 1)
 		html += `<tr><th colspan=2>${stances.replace(/(?!$)/g, '<th colspan=2>')}</tr>`;
 	html += '<tr><th>Level<th>Base loot';
-	for (let stance of stances)
+	for (let _ of stances)
 		html += '<th>Cells/s<th>Total';
 
 	for (let zone_stats of stats) {

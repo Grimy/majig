@@ -91,7 +91,6 @@ function update_dg() {
 	let burn = game.permanentGeneratorUpgrades.Slowburn.owned ? 0.4 : 0.5;
 	let cells = game.talents.magmaFlow ? 18 : 16;
 	let accel = game.talents.quickGen ? 1.03 : 1.02;
-	let speed = game.talents.hyperspeed ? 20 : 25;
 	let hs2 = game.talents.hyperspeed2 ? (game.global.highestLevelCleared + 1) / 2 : 0;
 	let bs = 0.5*game.talents.blacksmith + 0.25*game.talents.blacksmith2 + 0.15*game.talents.blacksmith3;
 	bs *= game.global.highestLevelCleared + 1;
@@ -133,7 +132,6 @@ function read_save() {
 	let zone = $('#zone').value;
 
 	if (!localStorage['weight-he'] && !localStorage['weight-atk'] && !localStorage['weight-hp']) {
-		let option: HTMLOptionElement;
 		$$('#preset > *').forEach(function (option: HTMLOptionElement) {
 			option.selected = +option.innerHTML.replace('z', '') < game.global.highestLevelCleared;
 		});

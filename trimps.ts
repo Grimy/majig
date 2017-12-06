@@ -1,8 +1,8 @@
 // trimps.js: some code common to Perky and zFarm
-
-const {abs, ceil, floor, log, max, min, pow, round, sqrt} = Math;
+/// <reference path="./lz-string.js"/>
 
 declare var LZString: any;
+const {abs, ceil, floor, log, max, min, pow, round, sqrt} = Math;
 
 ///
 // HTML manipulation utilities
@@ -19,6 +19,7 @@ function switch_theme() {
 	let dark = $('#dark');
 	localStorage.dark = (dark.disabled = !dark.disabled) ? '' : '1';
 }
+$('#dark').disabled = !localStorage.dark;
 
 function show_alert(style: string, message: string) {
 	$('#alert').innerHTML +=
@@ -167,8 +168,6 @@ function handle_paste(ev: ClipboardEvent) {
 
 window.onload = function () {
 	let version = '2.3';
-	$('#dark').disabled = !localStorage.dark;
-
 	if (version > localStorage.version)
 		show_alert('ok', `Welcome to Trimps tools v${version}! See what’s new in the <a href=changelog.html>changelog</a>.`);
 	localStorage.version = version;

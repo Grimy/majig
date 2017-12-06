@@ -1,18 +1,18 @@
 doctype html
 meta(charset='UTF-8')
+link(href='blue.css' rel='stylesheet')
+link(href='dark.css' rel='stylesheet' id='dark')
 
 block meta
   - title = 'Index'
 
 title= title
-link(href='blue.css' rel='stylesheet')
-link(href='dark.css' rel='stylesheet' id='dark')
-
 h1= title
 p#alert
 
 block content
-  | Nothing to see, here
+  body
+    | Nothing to see, here
 
 nav.flexbox
   a(href='zfarm.html' class={active: title=='zFarm'}) zFarm

@@ -2,6 +2,7 @@ extends index.pug
 
 block meta
   - title = 'zFarm'
+  script(src='zfarm.js')
 
 block content
   form.flexbox(action='javascript:try_wrap(main)')
@@ -89,7 +90,3 @@ block content
         | Note: the displayed loot values don’t account for special imps, looting perks and staffs.
         | As such, your actual loot will be much higher. However, these factors affect all maps in the
         | same way, and don’t affect the choice of map.
-
-  script(src='lz-string.js')
-  script(src='trimps.js')
-  script(src='zfarm.js')

@@ -2,6 +2,7 @@ extends index.pug
 
 block meta
   - title = 'Perky'
+  script(src='perks.js')
 
 block content
   form.flexbox(action='javascript:try_wrap(main)')
@@ -120,7 +121,3 @@ block content
         button(type='button' onclick='create_share()') Share
       #perks.flexbox
     .filler
-
-  script(src='/lz-string.js')
-  script(src='trimps.js')
-  script(src='perks.js')
