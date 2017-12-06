@@ -1,6 +1,6 @@
-* { box-sizing: border-box }
-:focus { outline: none }
-::-moz-focus-inner { border: 0 }
+* { box-sizing: border-box; }
+:focus { outline: none; }
+::-moz-focus-inner { border: 0; }
 [title] { cursor: help }
 button, [onclick] { cursor: pointer }
 body { background: #ebf4fe; color: #00263b; margin: 0; font: 1.1em/140% sans-serif }
