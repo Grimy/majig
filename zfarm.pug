@@ -5,7 +5,7 @@ block meta
 
 block content
   form.flexbox(action='javascript:try_wrap(main)')
-    fieldset.box
+    fieldset.box(style='flex: 0 0 36em')
       legend Inputs
       label(title='Export your Trimps save and paste it here')
         textarea#save(onfocus='this.value = ""' onpaste='handle_paste(event); read_save(); try_wrap(main)')
@@ -77,7 +77,7 @@ block content
           | Map Reducer?
       button.centered Recalculate
 
-    fieldset#results.box(style='opacity: 0')
+    fieldset#results.box(style='opacity: 0; flex: 0 0 36em')
       legend Results
       p(style='font-size: 1.1em') #[b#result]. #[span#comment]
       table#details
