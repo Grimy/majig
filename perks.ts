@@ -36,7 +36,7 @@ validate_fixed();
 
 let presets: {[key: string]: (string | number)[]} = {
 	pick:       [ '', '', ''],
-	early:      [  5,  4,  2],
+	early:      [  5,  4,  3],
 	broken:     [  7,  3,  1],
 	mid:        [ 16,  5,  1],
 	corruption: [ 25,  7,  1],
@@ -191,7 +191,7 @@ const parse_inputs = (preset: string) => ({
 	},
 	mod: {
 		storage: 0.125,
-		dg: input('dg'),
+		dg: preset == 'nerfed' ? 0 : input('dg'),
 		soldiers: preset == 'trapper' ? game.resources.trimps.owned : preset == 'trimp',
 		tent_city: preset == 'tent',
 		whip: $('#whipimp').checked,

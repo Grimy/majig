@@ -1,5 +1,4 @@
 // trimps.js: some code common to Perky and zFarm
-/// <reference path="./lz-string.js"/>
 
 declare var LZString: any;
 const {abs, ceil, floor, log, max, min, pow, round, sqrt} = Math;
@@ -151,7 +150,7 @@ function handle_paste(ev: ClipboardEvent) {
 	try {
 		game = JSON.parse(LZString.decompressFromBase64(save_string));
 		let version = 4.6;
-		if (game.global.version > version)
+		if (game.global.version > version + 0.009)
 			show_alert('warning', `This calculator only supports up to v${version} of Trimps, but your save is from v${game.global.version}. Results may be inaccurate.`);
 		else if (game.global.version < version)
 			show_alert('ok', `Trimps v${version} is out! Your save is still on v${game.global.version}, so you should refresh the game’s page.`);
