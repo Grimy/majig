@@ -63,7 +63,7 @@ function try_wrap(func: () => void) {
 
 function exit_share() {
 	history.pushState({}, '', 'perks.html');
-	$('textarea').onclick = null;
+	$('textarea').removeEventListener('click', exit_share);
 	$$('[data-saved]').forEach((field: HTMLInputElement) => field.value = localStorage[field.id] || field.value);
 }
 
@@ -73,7 +73,7 @@ function load_share(str: string) {
 	localStorage.notation = values.shift();
 
 	$$('input,select').forEach((field: HTMLInputElement) => field.value = values.shift());
-	$('textarea').onclick = exit_share;
+	$('textarea').addEventListener('click', exit_share);
 
 	// try_main();
 	localStorage.notation = notation || 1;
@@ -165,7 +165,7 @@ function handle_paste(ev: ClipboardEvent) {
 		game.talents[m] = game.talents[m].purchased;
 }
 
-window.onload = function () {
+document.addEventListener("DOMContentLoaded", function () {
 	let version = '2.3';
 	if (version > localStorage.version)
 		show_alert('ok', `Welcome to Trimps tools v${version}! See what’s new in the <a href=changelog.html>changelog</a>.`);
@@ -183,4 +183,4 @@ window.onload = function () {
 			field.addEventListener('change', () => localStorage[field.id] = field.value);
 		}
 	});
-};
+}, false);

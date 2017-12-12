@@ -32,7 +32,7 @@ function validate_fixed() {
 	}
 }
 
-validate_fixed();
+document.addEventListener("DOMContentLoaded", validate_fixed, false);
 
 let presets: {[key: string]: (string | number)[]} = {
 	pick:       [ '', '', ''],
@@ -128,7 +128,7 @@ function update_dg() {
 function read_save() {
 	// Auto-fill for the lazy
 	if (!localStorage.zone)
-		$('#zone').value = game.stats.highestVoidMap.valueTotal;
+		$('#zone').value = game.stats.highestVoidMap.valueTotal || game.global.highestLevelCleared;
 	let zone = $('#zone').value;
 
 	if (!localStorage['weight-he'] && !localStorage['weight-atk'] && !localStorage['weight-hp']) {
@@ -154,6 +154,9 @@ function read_save() {
 	         game.talents.turkimp ? 0.3 : 0.25;
 	let prod = 1 + tt;
 	let loot = 1 + 0.333 * tt;
+	let spires = min(floor((zone - 101) / 100), game.global.spiresCompleted);
+	loot *= zone < 100 ? 0.7 : 1 + (game.talents.stillRowing ? 0.3 : 0.2) * spires;
+
 	let chronojest = 27 * game.unlocks.imps.Jestimp + 15 * game.unlocks.imps.Chronoimp;
 	let cache = zone < 60 ? 0 : zone < 85 ? 7 : zone < 160 ? 10 : zone < 185 ? 14 : 20;
 	chronojest += (game.talents.mapLoot2 ? 5 : 4) * cache;
@@ -525,8 +528,6 @@ function optimize(params: any) {
 		for (let perk of perks) {
 			if (perk.locked || perk.level >= perk.cap || perk.cost() > he_left)
 				continue;
-			if (perk == Bait && zone >= 100)
-				continue;
 
 			perk.level += perk.pack;
 			let gain = score() - baseline;
@@ -542,9 +543,12 @@ function optimize(params: any) {
 		return best;
 	}
 
-	mod.loot *= 20.8 * (0.7 + 0.3 * floor((zone + 1) / 101));
+	mod.loot *= 20.8; // TODO: check that this is correct
 	weight.agility = (weight.helium + weight.attack) / 2;
 	weight.overkill = 0.25 * weight.attack * (2 - pow(0.9, weight.helium / weight.attack));
+
+	if (zone > 110 && mod.soldiers <= 1 && Bait.must == 0)
+		Bait.cap = 0;
 
 	// Main loop
 	for (let best; (best = best_perk()); ) {

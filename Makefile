@@ -11,9 +11,8 @@ docs/%.html: %.pug index.pug
 docs/%.css: %.styl
 	stylus -c <$^ >$@
 
-docs/%.js: %.ts
-	tsc -t ES5 --strict --noUnusedLocals --outDir docs $^
-	uglify -s $@ -o $@
+%.js: %.ts
+	tsc -t ES5 --strict --noUnusedLocals --outFile $@ $^
 
 docs/%.js: %.js
 	uglify -s $^ -o $@
