@@ -525,13 +525,15 @@ function optimize(params: any) {
 		for (let perk of perks) {
 			if (perk.locked || perk.level >= perk.cap || perk.cost() > he_left)
 				continue;
+			if (perk == Bait && zone >= 100)
+				continue;
 
 			perk.level += perk.pack;
 			let gain = score() - baseline;
 			perk.level -= perk.pack;
 
 			let efficiency = gain / perk.cost();
-			if (efficiency > max) {
+			if (efficiency >= max) {
 				max = efficiency;
 				best = perk;
 			}
