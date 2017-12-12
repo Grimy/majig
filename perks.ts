@@ -231,10 +231,8 @@ function display(results: any) {
 function main() {
 	let preset = $('#preset').value;
 
-	if (preset == 'trapper' && (!game || game.global.challengeActive != 'Trapper')) {
-		show_alert('ko', 'This preset requires a save currently running Trapper². Start a new run using “Trapper² (initial)”, export, and try again.');
-		return;
-	}
+	if (preset == 'trapper' && (!game || game.global.challengeActive != 'Trapper'))
+		throw 'This preset requires a save currently running Trapper². Start a new run using “Trapper² (initial)”, export, and try again.';
 
 	let inputs = parse_inputs(preset);
 	let max_zone = game ? game.global.highestLevelCleared : 999;
@@ -296,7 +294,7 @@ function parse_perks(fixed: string, unlocks: string) {
 	for (let item of (unlocks + ',' + fixed).split(/,/).filter(x => x)) {
 		let m = item.match(/(\S+) *([<=>])=?(.*)/);
 		if (!m)
-			throw 'Enter a list of perk levels, such as “power=42, toughness=51”';
+			throw 'Enter a list of perk levels, such as “power=42, toughness=51”.';
 
 		let tier2 = m[1].match(/2$|II$/);
 		let name = m[1].replace(/[ _]?(2|II)/i, '').replace(/^OK/i, 'O').replace(/^Looty/i, 'L');
@@ -517,10 +515,6 @@ function optimize(params: any) {
 	}
 
 	function best_perk(): Perk {
-		for (let perk of perks)
-			if (perk.level < perk.must)
-				return perk;
-
 		let best;
 		let max = 0;
 		let baseline = score();
@@ -549,6 +543,16 @@ function optimize(params: any) {
 
 	if (zone > 110 && mod.soldiers <= 1 && Bait.must == 0)
 		Bait.cap = 0;
+
+	for (let perk of perks) {
+		while (perk.level < perk.must) {
+			he_left -= perk.cost();
+			perk.level += perk.pack;
+		}
+	}
+
+	if (he_left < 0)
+		throw "You don’t have enough Helium to afford your Fixed Perks.";
 
 	// Main loop
 	for (let best; (best = best_perk()); ) {

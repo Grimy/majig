@@ -47,20 +47,6 @@ function create_share(callback: (url: string) => void) {
 	request.send();
 }
 
-function try_wrap(func: () => void) {
-	try {
-		func();
-	} catch (err) {
-		console.log(err);
-		create_share((url: string) => show_alert('ko',
-		`Oops! It’s not your fault, but something went wrong. You can go pester the dev on
-		<a href=https://github.com/Grimy/Grimy.github.io/issues/new>GitHub</a> or
-		<a href=https://www.reddit.com/message/compose/?to=Grimy_>Reddit</a>, he’ll fix it.
-		If you do, please include the following message:
-		<br><tt>${url} l${err.lineNumber || 0}c${err.columnNumber || 0} ${err}</tt>.`));
-	}
-}
-
 function exit_share() {
 	history.pushState({}, '', 'perks.html');
 	$('textarea').removeEventListener('click', exit_share);
@@ -138,6 +124,20 @@ function check_input(field: HTMLInputElement) {
 	field.setCustomValidity(ok ? '' : `Invalid ${notation}number: ${field.value}`);
 }
 
+window.addEventListener('error', (ev) => {
+	if (typeof ev.error == 'string') {
+		show_alert('ko', ev.error);
+		return;
+	}
+
+	create_share((url: string) => show_alert('ko',
+	`Oops! It’s not your fault, but something went wrong. You can go pester the dev on
+	<a href=https://github.com/Grimy/Grimy.github.io/issues/new>GitHub</a> or
+	<a href=https://www.reddit.com/message/compose/?to=Grimy_>Reddit</a>, he’ll fix it.
+	If you do, please include the following message:<br>
+	<tt>${url} ${ev.filename} l${ev.lineno || 0}c${ev.colno || 0} ${ev.message}</tt>.`));
+});
+
 ///
 // Handling Trimps save data
 ///
@@ -154,9 +154,8 @@ function handle_paste(ev: ClipboardEvent) {
 			show_alert('warning', `This calculator only supports up to v${version} of Trimps, but your save is from v${game.global.version}. Results may be inaccurate.`);
 		else if (game.global.version < version)
 			show_alert('ok', `Trimps v${version} is out! Your save is still on v${game.global.version}, so you should refresh the game’s page.`);
-	} catch (err) {
-		show_alert('ko', 'Your clipboard did not contain a valid Trimps save. Open the game, click “Export” then “Copy to Clipboard”, and try again.');
-		return;
+	} catch {
+		throw 'Your clipboard did not contain a valid Trimps save. Open the game, click “Export” then “Copy to Clipboard”, and try again.';
 	}
 
 	localStorage.notation = game.options.menu.standardNotation.enabled;

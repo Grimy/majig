@@ -142,10 +142,8 @@ function get_best(stats: any[], stances: string) {
 function display(results: any[]) {
 	let [stats, stances] = results;
 
-	if (stats.length === 0) {
-		show_alert('ko', 'Your attack is too low to farm anywhere.');
-		return;
-	}
+	if (stats.length === 0)
+		throw 'Your attack is too low to farm anywhere.';
 
 	let best = get_best(stats.slice(), stances);
 	let show_stance = $('#zone').value >= 60;
