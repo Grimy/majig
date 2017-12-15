@@ -34,45 +34,29 @@ function validate_fixed() {
 
 document.addEventListener("DOMContentLoaded", validate_fixed, false);
 
-let presets: {[key: string]: (string | number)[]} = {
-	pick:       [ '', '', ''],
-	early:      [  5,  4,  3],
-	broken:     [  7,  3,  1],
-	mid:        [ 16,  5,  1],
-	corruption: [ 25,  7,  1],
-	magma:      [ 35,  4,  3],
-	z280:       [ 42,  6,  1],
-	z400:       [ 88, 10,  1],
-	z450:       [500, 50,  1],
-	spire:      [  0,  1,  1],
-	nerfed:     [  0,  4,  3],
-	tent:       [  5,  4,  3],
-	scientist:  [  0,  1,  3],
-	carp:       [  0,  0,  0],
-	trapper:    [  0,  7,  1],
-	coord:      [  0, 40,  1],
-	trimp:      [  0, 99,  1],
-	metal:      [  0,  7,  1],
-	c2:         [  0,  7,  1],
+let presets: {[key: string]: string[]} = {
+	early:      [  '5',  '4',  '3'],
+	broken:     [  '7',  '3',  '1'],
+	mid:        [ '16',  '5',  '1'],
+	corruption: [ '25',  '7',  '1'],
+	magma:      [ '35',  '4',  '3'],
+	z280:       [ '42',  '6',  '1'],
+	z400:       [ '88', '10',  '1'],
+	z450:       ['500', '50',  '1'],
+	spire:      [  '0',  '1',  '1'],
+	nerfed:     [  '0',  '4',  '3'],
+	tent:       [  '5',  '4',  '3'],
+	scientist:  [  '0',  '1',  '3'],
+	carp:       [  '0',  '0',  '0'],
+	trapper:    [  '0',  '7',  '1'],
+	coord:      [  '0', '40',  '1'],
+	trimp:      [  '0', '99',  '1'],
+	metal:      [  '0',  '7',  '1'],
+	c2:         [  '0',  '7',  '1'],
 }
 
 function select_preset(name: string) {
-	let preset = presets[name];
-
-	function special(regex: RegExp, field: HTMLInputElement, prefix: string) {
-		field.value = field.value.replace(prefix, '');
-		if (name.match(regex))
-			field.value = prefix + field.value;
-	}
-
-	special(/spire|metal|trapper|carp/, $('#prod'), '0*');
-	special(/spire|carp/, $('#loot'), '0*');
-	special(/spire/, $('#fixed'), 'overkill=0,');
-	special(/nerfed/, $('#fixed'), 'overkill=1,');
-	special(/scientist/, $('#fixed'), 'coord=0,');
-	special(/trapper/, $('#fixed'), 'phero=0,anti=0,');
-
-	[$('#weight-he').value, $('#weight-atk').value, $('#weight-hp').value] = preset;
+	[$('#weight-he').value, $('#weight-atk').value, $('#weight-hp').value] = presets[name];
 }
 
 function handle_respec(respec: boolean) {
@@ -122,7 +106,7 @@ function update_dg() {
 	while (fuel >= burn)
 		tick(1);
 
-	$("#dg").value = floor(housing);
+	$("#dg").value = prettify(housing);
 }
 
 function read_save() {
@@ -182,31 +166,64 @@ function read_save() {
 	$('#breed-timer').value = game.talents.patience ? 45 : 30;
 }
 
-const parse_inputs = (preset: string) => ({
-	he_left: preset == 'nerfed' ? 1e8 : input('helium'),
-	zone: preset == 'nerfed' ? 200 : parseInt($('#zone').value),
-	perks: parse_perks($('#fixed').value, $('#unlocks').value),
-	weight: {
-		helium: input('weight-he'),
-		attack: input('weight-atk'),
-		health: input('weight-hp'),
-		trimps: preset == 'carp' ? 1e6 : 0,
-	},
-	mod: {
-		storage: 0.125,
-		dg: preset == 'nerfed' ? 0 : input('dg'),
-		soldiers: preset == 'trapper' ? game.resources.trimps.owned : preset == 'trimp',
-		tent_city: preset == 'tent',
-		whip: $('#whipimp').checked,
-		magn: $('#magnimp').checked,
-		taunt: $('#tauntimp').checked,
-		ven: $('#venimp').checked,
-		chronojest: input('chronojest'),
-		prod: input('prod'),
-		loot: input('loot'),
-		breed_timer: input('breed-timer'),
+function parse_inputs(preset: string) {
+	let result = {
+		he_left: input('helium'),
+		zone: parseInt($('#zone').value),
+		perks: parse_perks($('#fixed').value, $('#unlocks').value),
+		weight: {
+			helium: input('weight-he'),
+			attack: input('weight-atk'),
+			health: input('weight-hp'),
+		},
+		mod: {
+			storage: 0.125,
+			dg: preset == 'nerfed' ? 0 : input('dg'),
+			tent_city: preset == 'tent',
+			whip: $('#whipimp').checked,
+			magn: $('#magnimp').checked,
+			taunt: $('#tauntimp').checked,
+			ven: $('#venimp').checked,
+			chronojest: input('chronojest'),
+			prod: input('prod'),
+			loot: input('loot'),
+			breed_timer: input('breed-timer'),
+		}
+	};
+
+	if (preset == 'nerfed') {
+		result.he_left = 1e8;
+		result.zone = 200;
+		result.mod.dg = 0;
 	}
-});
+
+	if (preset == 'trapper') {
+		result.mod.soldiers = game.resources.trimps.owned;
+		result.mod.prod = 0;
+		special(/trapper/, $('#fixed'), 'phero=0,anti=0,');
+	}
+
+	if (preset == 'spire')
+		result.mod.prod = result.mod.loot = 0;
+
+	if (preset == 'carp') {
+		result.mod.prod = result.mod.loot = 0;
+		result.weight.trimps = 1e6;
+	}
+
+	if (preset == 'metal')
+		result.mod.prod = 0;
+
+	if (preset == 'trimp')
+		result.mod.soldiers = 1;
+
+	if (preset == 'metal')
+		result.mod.prod = 0;
+
+		// special(/spire/, $('#fixed'), 'overkill=0,');
+		// special(/nerfed/, $('#fixed'), 'overkill=1,');
+		// special(/scientist/, $('#fixed'), 'coord=0,');
+}
 
 function display(results: any) {
 	let [he_left, perks] = results;

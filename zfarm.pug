@@ -20,10 +20,10 @@ block content
           option(value='sea') Sea
         | Biome
       label(title='Your minimum attack, in X, without the Titimp buff')
-        input#attack(type='text' oninput='check_input(this)' required='')
+        input#attack(type='text' oninput='check_input(this)' required)
         | Min ATK
       label(title='Your current world zone')
-        input#zone(type='text' required='' pattern='\\d+')
+        input#zone(type='text' required pattern='\\d+')
         | World zone
       .tabs
         label(for='advanced') Toggle manual input

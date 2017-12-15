@@ -1,13 +1,13 @@
 // trimps.js: some code common to Perky and zFarm
 
-declare var LZString: any;
+declare var LZString: {[key: string]: (str: string) => string};
 const {abs, ceil, floor, log, max, min, pow, round, sqrt} = Math;
 
 ///
 // HTML manipulation utilities
 ///
 
-const $ = (selector: string) => <any> document.querySelector(selector);
+const $ = (selector: string) => <Element & HTMLInputElement> document.querySelector(selector);
 const $$ = (selector: string) => [].slice.apply(document.querySelectorAll(selector));
 
 function remove(elem: HTMLElement) {
@@ -58,7 +58,7 @@ function load_share(str: string) {
 	let notation = localStorage.notation;
 	localStorage.notation = values.shift();
 
-	$$('input,select').forEach((field: HTMLInputElement) => field.value = values.shift());
+	$$('input,select').forEach((field: HTMLInputElement) => field.value = values.shift()!);
 	$('textarea').addEventListener('click', exit_share);
 
 	// try_main();
@@ -80,7 +80,7 @@ const notations = [
 	' aa ab ac ad ae af ag ah ai aj ak al am an ao ap aq ar as at au av aw ax ay az' +
 	' ba bb bc bd be bf bg bh bi bj bk bl bm bn bo bp bq br bs bt bu bv bw bx by bz' +
 	' ca cb cc cd ce cf cg ch ci cj ck cl cm cn co cp cq cr cs ct cu cv cw cx').split(' '),
-	'KMBTQaQiSxSpOcNoDcUdDdTdQadQidSxdSpdOdNdVUvDvTvQavQivSxvSpvOvNvTt'.split(/(?=[A-Z])/),
+	'KMBTQaQiSxSpOcNoDcUdDdTdQadQidSxdSpdOdNdVUvDvTvQavQivSxvSpvOvNvTg'.split(/(?=[A-Z])/),
 ];
 
 function prettify(number: number): string {
@@ -148,7 +148,9 @@ function handle_paste(ev: ClipboardEvent) {
 	let save_string = ev.clipboardData.getData("text/plain").replace(/\s/g, '');
 
 	try {
+		console.log('entered');
 		game = JSON.parse(LZString.decompressFromBase64(save_string));
+		console.log('good so far');
 		let version = 4.6;
 		if (game.global.version > version + 0.009)
 			show_alert('warning', `This calculator only supports up to v${version} of Trimps, but your save is from v${game.global.version}. Results may be inaccurate.`);
