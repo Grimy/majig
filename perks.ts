@@ -533,7 +533,7 @@ function optimize(params: any) {
 		let total = 0;
 		let cap = 1000 * pow(5, fluffy.prestige) * (mult(Capable, 300) - 1) / 3 - fluffy.xp;
 
-		for (let z = 301; z < zone; ++z)
+		for (let z = 301; z < zone + 5; ++z)
 			total += (zone_xp *= 1.015);
 
 		return max(0.2, min(total, cap));
