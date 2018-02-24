@@ -209,6 +209,7 @@ function parse_inputs(preset: string) {
 	if (preset == 'trapper') {
 		result.mod.soldiers = game.resources.trimps.owned;
 		result.mod.prod = 0;
+		// TODO
 		// special(/trapper/, $('#fixed'), 'phero=0,anti=0,');
 	}
 
@@ -589,7 +590,7 @@ function optimize(params: any) {
 		Bait.cap = 0;
 	
 	if (!Capable.must)
-		Capable.must = floor(log(0.003 * fluffy.xp / pow(5, fluffy.prestige) + 1) / log(4));
+		Capable.must = min(10, floor(log(0.003 * fluffy.xp / pow(5, fluffy.prestige) + 1) / log(4)));
 
 	for (let perk of perks) {
 		while (perk.level < perk.must) {
