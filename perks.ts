@@ -594,8 +594,10 @@ function optimize(params: any) {
 
 	for (let perk of perks) {
 		while (perk.level < perk.must) {
-			he_left -= perk.cost();
+			let cost = perk.cost();
+			he_left -= cost;
 			perk.level += perk.pack;
+			perk.spent += cost;
 		}
 	}
 
