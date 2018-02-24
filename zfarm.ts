@@ -26,6 +26,13 @@ function read_save() {
 	attack *= 1 + 0.01 * game.global.totalSquaredReward;
 	attack /= [1, 0.5, 4, 0.5, 0.5][game.global.formation];
 
+	// Fluffy
+	let prestige = game.global.fluffyPrestige;
+	let xp = log(0.003 * game.global.fluffyExp / pow(5, prestige) + 1) / log(4);
+	let level = min(floor(xp), game.portal.Capable.level);
+	let progress = level == game.portal.Capable.level ? 0 : (pow(4, xp - level) - 1) / 3;
+	attack *= 1 + pow(5, prestige) * 0.1 * (level / 2 + progress) * (level + 1);
+
 	if (game.global.sugarRush > 0)
 		attack *= floor(zone / 100);
 
@@ -79,15 +86,16 @@ function read_save() {
 	$('#cd').value = 100 + 30 * crits + game.heirlooms.Shield.critDamage.currentBonus;
 	$('#challenge').value = prettify(enemyHealth);
 	$('#coordinate').checked = challenge === "Coordinate";
-	$('#difficulty').value = perfect ? 75 : 80;
+	$('#difficulty').value = prettify((perfect ? 75 : 80) + (challenge === "Mapocalypse" ? 300 : 0));
 	$('#fragments').value = prettify(game.resources.fragments.owned);
-	$('#imports').value = imps;
+	$('#imports').value = prettify(imps);
 	$('#nature').value = zone >= 236 ? nature.level + diplomacy : 0;
+	$('#ok_spread').value = prettify(level + prestige >= 13 ? 3 : level + prestige >= 10 ? 2 : 1);
 	$('#overkill').value = game.portal.Overkill.level;
-	$('#range').value = +(maxFluct / minFluct).toPrecision(5);
+	$('#range').value = prettify(maxFluct / minFluct);
 	$('#reducer').checked = game.talents.mapLoot;
 	$('#scry').checked = game.global.highestLevelCleared >= 180;
-	$('#size').value = game.talents.mapLoot2 ? 20 : perfect ? 25 : 27;
+	$('#size').value = prettify(game.talents.mapLoot2 ? 20 : perfect ? 25 : 27);
 	$('#speed').value = prettify(speed);
 	$('#titimp').checked = game.unlocks.imps.Titimp;
 	$('#transfer').value = zone >= 236 ? nature.retainLevel + diplomacy : 0;
@@ -97,24 +105,25 @@ function read_save() {
 const parse_inputs = () => ({
 	attack: input('attack'),
 	biome: biomes.all.concat(biomes[$('#biome').value]),
-	cc: $('#cc').value / 100 * max_rand,
-	cd: 1 + $('#cd').value / 100,
+	cc: input('cc') / 100 * max_rand,
+	cd: 1 + input('cd') / 100,
 	challenge: input('challenge'),
 	coordinate: $('#coordinate').checked,
-	difficulty: $('#difficulty').value / 100,
+	difficulty: input('difficulty') / 100,
 	fragments: input('fragments'),
-	import_chance: $('#imports').value * 0.03 * max_rand,
-	overkill: $('#overkill').value * 0.005,
-	range: ($('#range').value - 1) / max_rand,
+	import_chance: input('imports') * 0.03 * max_rand,
+	ok_spread: input('ok_spread'),
+	overkill: input('overkill') * 0.005,
+	range: (input('range') - 1) / max_rand,
 	reducer: $('#reducer').checked,
 	scry: $('#scry').checked,
-	size: $('#size').value | 0,
+	size: input('size'),
 	speed: input('speed'),
 	titimp: $('#titimp').checked,
-	transfer: $('#transfer').value / 100,
-	zone: $('#zone').value | 0,
+	transfer: input('transfer') / 100,
+	zone: input('zone'),
 	poison: 0, wind: 0, ice: 0,
-	[['poison', 'wind', 'ice'][ceil(input('zone') / 5) % 3]]: $('#nature').value / 100,
+	[['poison', 'wind', 'ice'][ceil(input('zone') / 5) % 3]]: input('nature') / 100,
 });
 
 // Return info about the best zone for each stance
@@ -146,7 +155,7 @@ function display(results: any[]) {
 		throw 'Your attack is too low to farm anywhere.';
 
 	let best = get_best(stats.slice(), stances);
-	let show_stance = $('#zone').value >= 60;
+	let show_stance = input('zone') >= 60;
 	let html = '';
 
 	if (stances.length > 1)
@@ -174,7 +183,7 @@ function display(results: any[]) {
 	}
 
 	$('#details').innerHTML = html + '</tr>';
-	$('#results').style.opacity = 1;
+	$('#results').style.opacity = '1';
 
 	if (show_stance) {
 		best.overall += ' in ' + best.stance;
@@ -182,7 +191,7 @@ function display(results: any[]) {
 	}
 
 	if (stats.length == 1) {
-		if ($('#zone').value % 100 === 0 && $('#zone').value > 100) {
+		if (input('zone') % 100 === 0 && input('zone') > 100) {
 			$('#result').textContent = 'You should definitely farm on ' + best.overall;
 			$('#comment').textContent = 'Good luck with the Spire!';
 		} else {
@@ -246,9 +255,9 @@ function enemy_hp(g: any, zone: number, cell: number) {
 // Simulate farming at the given zone for a fixed time, and return the number cells cleared.
 function simulate(g: any, zone: number) {
 	let titimp = 0;
-	let ok_dmg = 0;
 	let cell = 0;
 	let loot = 0;
+	let ok_dmg = 0, ok_spread = 0;
 	let poison = 0, wind = 0, ice = 0;
 
 	for (let ticks = 0; ticks < max_ticks; ++cell) {
@@ -263,12 +272,16 @@ function simulate(g: any, zone: number) {
 		}
 
 		let hp = toughness * enemy_hp(g, zone, cell % g.size);
-		if (cell % g.size !== 0)
-			hp -= min(ok_dmg, hp);
+
+		if (cell % g.size !== 0 && ok_spread !== 0) {
+			hp -= ok_dmg;
+			--ok_spread;
+		}
 
 		let turns = 0;
 		while (hp > 0) {
 			++turns;
+			ok_spread = g.ok_spread;
 			let damage = g.atk * (1 + g.range * rng());
 			damage *= rng() < g.cc ? g.cd : 1;
 			damage *= titimp > ticks ? 2 : 1;

@@ -10,7 +10,7 @@ block content
     fieldset.box(style='flex: 2 0 320px')
       legend Inputs
       label(title='Export your Trimps save and paste it here.')
-        textarea#save(onfocus='this.value = ""' onpaste='handle_paste(event)')
+        textarea#save(onfocus='this.value = ""' onpaste='handle_paste(event, read_save, main)')
         | Import save
       label(title='Check this when respeccing from the View Perks screen.')
         input#respec(type='checkbox' onchange='handle_respec(this.checked)')
@@ -18,7 +18,7 @@ block content
       label(title='The base zone used in calculations. Set this to a few zone before your planned portalling zone, for example the zone on which you do your Void Maps.')
         input#zone(type='text' required pattern='\\d{2,3}' onchange='if (game) update_dg()' data-saved='')
         | Target zone
-      label(title='Suggested weights far various situations.')
+      label(title='Suggested weights for various situations.')
         select#preset(onchange='select_preset(this.value)')
           option(disabled)
             | — Normal progression —
@@ -70,6 +70,9 @@ block content
       label(title='How much you value +1% survivability (health and block).')
         input#weight-hp(type='text' oninput='check_input(this)' required data-saved='')
         | Weight: Health
+      label(title='How much you value +1% Fluffy exp gain.')
+        input#weight-xp(type='text' oninput='check_input(this)' required data-saved='')
+        | Weight: Fluffy
       label(title='A list of perks that you don’t want to change, for example “power=42, carp=31”')
         input#fixed(type='text' oninput='validate_fixed()' data-saved='')
         | Fixed perks

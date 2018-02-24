@@ -144,14 +144,12 @@ window.addEventListener('error', (ev) => {
 
 let game: any;
 
-function handle_paste(ev: ClipboardEvent) {
+function handle_paste(ev: ClipboardEvent, read_save: () => void, main: () => void) {
 	let save_string = ev.clipboardData.getData("text/plain").replace(/\s/g, '');
 
 	try {
-		console.log('entered');
 		game = JSON.parse(LZString.decompressFromBase64(save_string));
-		console.log('good so far');
-		let version = 4.6;
+		let version = 4.7;
 		if (game.global.version > version + 0.009)
 			show_alert('warning', `This calculator only supports up to v${version} of Trimps, but your save is from v${game.global.version}. Results may be inaccurate.`);
 		else if (game.global.version < version)
@@ -164,6 +162,9 @@ function handle_paste(ev: ClipboardEvent) {
 
 	for (let m in game.talents)
 		game.talents[m] = game.talents[m].purchased;
+	
+	read_save();
+	main();
 }
 
 document.addEventListener("DOMContentLoaded", function () {

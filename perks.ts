@@ -12,14 +12,15 @@ class Perk {
 		private base_cost: number,
 		private increment: number,
 		public cap: number,
-		public free: number
+		public free: number,
+		private scaling: number = 30,
 	) {}
 
 	// Compute the current cost of a perk, based on its current level.
 	cost() {
 		return this.increment ? 
 			this.pack * (this.base_cost + this.increment * (this.level + (this.pack - 1) / 2)) :
-			ceil(this.level / 2 + this.base_cost * mult(this, 30));
+			ceil(this.level / 2 + this.base_cost * mult(this, this.scaling));
 	}
 }
 
@@ -57,15 +58,16 @@ let presets: {[key: string]: string[]} = {
 
 function select_preset(name: string) {
 	[$('#weight-he').value, $('#weight-atk').value, $('#weight-hp').value] = presets[name];
+	$('#weight-xp').value = floor((+presets[name][0] + +presets[name][1] + +presets[name][2]) / 5).toString();
 }
 
 function handle_respec(respec: boolean) {
 	let owned = game ? game.resources.helium.owned : 0;
-	$('#helium').value = input('helium') + owned * (respec ? -1 : 1);
+	$('#helium').value = (input('helium') + owned * (respec ? -1 : 1)).toString();
 }
 
 function update_dg() {
-	let max_zone = $('#zone').value / 2 + 115;
+	let max_zone = input('zone') / 2 + 115;
 	let eff = 500e6 + 50e6 * game.generatorUpgrades.Efficiency.upgrades;
 	let capa = 3 + 0.4 * game.generatorUpgrades.Capacity.upgrades;
 	let max_fuel = game.permanentGeneratorUpgrades.Storage.owned ? capa * 1.5 : capa;
@@ -113,11 +115,11 @@ function read_save() {
 	// Auto-fill for the lazy
 	if (!localStorage.zone)
 		$('#zone').value = game.stats.highestVoidMap.valueTotal || game.global.highestLevelCleared;
-	let zone = $('#zone').value;
+	let zone = input('zone');
 
 	if (!localStorage['weight-he'] && !localStorage['weight-atk'] && !localStorage['weight-hp']) {
 		$$('#preset > *').forEach(function (option: HTMLOptionElement) {
-			option.selected = +option.innerHTML.replace('z', '') < game.global.highestLevelCleared;
+			option.selected = parseInt(option.innerHTML.replace('z', '')) < game.global.highestLevelCleared;
 		});
 		select_preset($('#preset').value);
 	}
@@ -160,10 +162,10 @@ function read_save() {
 	$('#magnimp').checked = game.unlocks.imps.Magnimp;
 	$('#tauntimp').checked = game.unlocks.imps.Tauntimp;
 	$('#venimp').checked = game.unlocks.imps.Venimp;
-	$('#chronojest').value = chronojest;
-	$('#prod').value = ($('#prod').value.startsWith('0*') ? '0*' : '') + prettify(prod);
-	$('#loot').value = ($('#loot').value.startsWith('0*') ? '0*' : '') + prettify(loot);
-	$('#breed-timer').value = game.talents.patience ? 45 : 30;
+	$('#chronojest').value = prettify(chronojest);
+	$('#prod').value = ($('#prod').value.indexOf('0*') ? '' : '0*') + prettify(prod);
+	$('#loot').value = ($('#loot').value.indexOf('0*') ? '' : '0*') + prettify(loot);
+	$('#breed-timer').value = prettify(game.talents.patience ? 45 : 30);
 }
 
 function parse_inputs(preset: string) {
@@ -175,9 +177,16 @@ function parse_inputs(preset: string) {
 			helium: input('weight-he'),
 			attack: input('weight-atk'),
 			health: input('weight-hp'),
+			xp: input('weight-xp'),
+			trimps: 0,
+		},
+		fluffy: {
+			xp: game ? game.global.fluffyExp : 0,
+			prestige: game ? game.global.fluffyPrestige : 0,
 		},
 		mod: {
 			storage: 0.125,
+			soldiers: 0,
 			dg: preset == 'nerfed' ? 0 : input('dg'),
 			tent_city: preset == 'tent',
 			whip: $('#whipimp').checked,
@@ -200,7 +209,7 @@ function parse_inputs(preset: string) {
 	if (preset == 'trapper') {
 		result.mod.soldiers = game.resources.trimps.owned;
 		result.mod.prod = 0;
-		special(/trapper/, $('#fixed'), 'phero=0,anti=0,');
+		// special(/trapper/, $('#fixed'), 'phero=0,anti=0,');
 	}
 
 	if (preset == 'spire')
@@ -219,16 +228,18 @@ function parse_inputs(preset: string) {
 
 	if (preset == 'metal')
 		result.mod.prod = 0;
+	
+	// special(/spire/, $('#fixed'), 'overkill=0,');
+	// special(/nerfed/, $('#fixed'), 'overkill=1,');
+	// special(/scientist/, $('#fixed'), 'coord=0,');
 
-		// special(/spire/, $('#fixed'), 'overkill=0,');
-		// special(/nerfed/, $('#fixed'), 'overkill=1,');
-		// special(/scientist/, $('#fixed'), 'coord=0,');
+	return result;
 }
 
 function display(results: any) {
 	let [he_left, perks] = results;
 
-	$('#results').style.opacity = 1;
+	$('#results').style.opacity = '1';
 	$('#info').innerText = localStorage.more ? 'Less info' : 'More info';
 	$('#he-left').innerHTML = prettify(he_left) + ' Helium Left Over';
 	$('#perks').innerHTML = perks.filter((p: Perk) => !p.locked).map((perk: Perk) => {
@@ -283,6 +294,9 @@ function parse_perks(fixed: string, unlocks: string) {
 		new Perk('Motivation_II',  50e3,  1e3,  Infinity, 1e4),
 		new Perk('Power_II',       20e3,  500,  Infinity, 1e4),
 		new Perk('Toughness_II',   20e3,  500,  Infinity, 1e4),
+		new Perk('Capable',        1e8,   0,    10,       1e4, 900),
+		new Perk('Cunning',        1e11,  0,    Infinity, 1e4),
+		new Perk('Curious',        1e14,  0,    Infinity, 1e4),
 		new Perk('Overkill',       1e6,   0,    30,       1e4),
 		new Perk('Resourceful',    50e3,  0,    Infinity, 1e6),
 		new Perk('Coordinated',    150e3, 0,    Infinity, 1e4),
@@ -338,9 +352,10 @@ function parse_perks(fixed: string, unlocks: string) {
 }
 
 function optimize(params: any) {
-	let {he_left, zone, perks, weight, mod} = params;
+	let {he_left, zone, fluffy, perks, weight, mod} = params;
 	let [
 		Looting_II, Carpentry_II, Motivation_II, Power_II, Toughness_II,
+		Capable, Cunning, Curious,
 		Overkill, Resourceful, Coordinated, Siphonology, Anticipation,
 		Resilience, Meditation, Relentlessness, Carpentry, Artisanistry,
 		Range, Agility, Bait, Trumps, Pheromones,
@@ -362,7 +377,7 @@ function optimize(params: any) {
 	const base_income = 600 * mod.whip * books;
 	const base_helium = pow(zone - 19, 2);
 	const max_tiers = zone / 5 + +((zone - 1) % 10 < 5);
-	const exp = {
+	const exponents = {
 		cost: pow(1.069, 0.85 * (zone < 60 ? 57 : 53)),
 		attack: pow(1.19, 13),
 		health: pow(1.19, 14),
@@ -405,13 +420,13 @@ function optimize(params: any) {
 	function equip(stat: "attack" | "health" | "block") {
 		let cost = equip_cost[stat] * mult(Artisanistry, -5);
 		let levels = 1.136;
-		let tiers = log(1 + income() * trimps() / cost) / log(exp.cost);
+		let tiers = log(1 + income() * trimps() / cost) / log(exponents.cost);
 
 		if (tiers > max_tiers + 0.45) {
-			levels = log(1 + pow(exp.cost, tiers - max_tiers) * 0.2) / log(1.2);
+			levels = log(1 + pow(exponents.cost, tiers - max_tiers) * 0.2) / log(1.2);
 			tiers = max_tiers;
 		}
-		return levels * pow(exp[stat], tiers);
+		return levels * pow(exponents[stat], tiers);
 	}
 
 	// Number of buildings of a given kind that can be built with the current income.
@@ -511,11 +526,23 @@ function optimize(params: any) {
 		return soldiers() * (block + health);
 	}
 
+	// XP earned by Fluffy over the run
+	function xp() {
+		let zone_xp = 50 * add(Cunning, 25) * add(Curious, 60);
+		let total = 0;
+		let cap = 1000 * pow(5, fluffy.prestige) * (mult(Capable, 300) - 1) / 3 - fluffy.xp;
+
+		for (let z = 301; z < zone; ++z)
+			total += (zone_xp *= 1.015);
+
+		return max(0.2, min(total, cap));
+	}
+
 	const agility = () => 1 / mult(Agility, -5);
 	const helium = () => base_helium * looting() + 45;
-	const overkill = () => add(Overkill, 100);
+	const overkill = () => max(0.2, Overkill.level);
 
-	const stats: {[key: string]: () => number} = { agility, helium, attack, health, overkill, trimps };
+	const stats: {[key: string]: () => number} = { agility, helium, xp, attack, health, overkill, trimps };
 
 	function score() {
 		let result = 0;
@@ -560,6 +587,9 @@ function optimize(params: any) {
 
 	if (zone > 110 && mod.soldiers <= 1 && Bait.must == 0)
 		Bait.cap = 0;
+	
+	if (!Capable.must)
+		Capable.must = floor(log(0.003 * fluffy.xp / pow(5, fluffy.prestige) + 1) / log(4));
 
 	for (let perk of perks) {
 		while (perk.level < perk.must) {
