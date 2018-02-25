@@ -281,8 +281,9 @@ function display(results: any) {
 		let diff = game ? level - game.portal[name].level : 0;
 		let diff_text = diff ? ` (${diff > 0 ? '+' : '-'}${prettify(abs(diff))})` : '';
 		let style = diff > 0 ? 'adding' : diff < 0 ? 'remove' : level >= cap ? 'capped' : '';
+		let size = ['', 'small', 'tiny'][game ? game.options.menu.smallPerks.enabled : 0];
 
-		return `<div class='perk ${style} ${localStorage.more}'>`
+		return `<div class='perk ${style} ${size} ${localStorage.more}'>`
 			+ `<b>${name.replace('_', ' ')}</b><br>`
 			+ `Level: <b>${prettify(level)}${diff_text}</b><br><span class=more>`
 			+ `Price: ${level >= cap ? '∞' : prettify(perks[name].cost())}<br>`
