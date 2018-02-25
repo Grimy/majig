@@ -168,7 +168,7 @@ function handle_paste(ev: ClipboardEvent, read_save: () => void, main: () => voi
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-	let version = '2.3';
+	let version = '2.4';
 	if (version > localStorage.version)
 		show_alert('ok', `Welcome to Trimps tools v${version}! See what’s new in the <a href=changelog.html>changelog</a>.`);
 	localStorage.version = version;
