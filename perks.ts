@@ -553,12 +553,12 @@ function optimize(params: any) {
 	// XP earned by Fluffy over the run
 	fluffy.base = 0;
 	for (let z = 301; z < zone; ++z)
-		fluffy.base += 6 * 50 * pow(1.015, z - 300);
+		fluffy.base += 50 * pow(1.015, z - 300);
 
 	function xp() {
 		let total = fluffy.base * add(Cunning, 25) * add(Curious, 60);
 		let cap = 1000 * pow(5, fluffy.prestige) * (mult(Capable, 300) - 1) / 3;
-		return max(0.2, min(total, cap - fluffy.xp));
+		return max(1, min(total, cap - fluffy.xp) + min(total * 7, cap - fluffy.xp));
 	}
 
 	const agility = () => 1 / mult(Agility, -5);
