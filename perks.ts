@@ -8,7 +8,6 @@ class Perk {
 	spent = 0;
 
 	constructor(
-		public name: string,
 		private base_cost: number,
 		private increment: number,
 		public cap: number,
@@ -33,7 +32,9 @@ function validate_fixed() {
 	}
 }
 
-document.addEventListener("DOMContentLoaded", validate_fixed, false);
+function toggle_fluffy() {
+	(<any> $('#weight-xp').parentNode).style.display = localStorage.fluffy ? '' : 'none';
+}
 
 let presets: {[key: string]: string[]} = {
 	early:      [  '5',  '4',  '3'],
@@ -56,9 +57,22 @@ let presets: {[key: string]: string[]} = {
 	c2:         [  '0',  '7',  '1'],
 }
 
-function select_preset(name: string) {
+function select_preset(name: string, manually: boolean = true) {
+	delete localStorage['weight-he'];
+	delete localStorage['weight-atk'];
+	delete localStorage['weight-hp'];
+	delete localStorage['weight-xp'];
 	[$('#weight-he').value, $('#weight-atk').value, $('#weight-hp').value] = presets[name];
 	$('#weight-xp').value = floor((+presets[name][0] + +presets[name][1] + +presets[name][2]) / 5).toString();
+}
+
+function auto_preset() {
+	let [he, atk, hp] = presets[$('#preset').value];
+	let xp = floor((+he + +atk + +hp) / 5).toString();
+	$('#weight-he').value = localStorage['weight-he'] || he;
+	$('#weight-atk').value = localStorage['weight-atk'] || atk;
+	$('#weight-hp').value = localStorage['weight-hp'] || hp;
+	$('#weight-xp').value = localStorage['weight-xp'] || xp;
 }
 
 function handle_respec(respec: boolean) {
@@ -117,11 +131,15 @@ function read_save() {
 		$('#zone').value = game.stats.highestVoidMap.valueTotal || game.global.highestLevelCleared;
 	let zone = input('zone');
 
-	if (!localStorage['weight-he'] && !localStorage['weight-atk'] && !localStorage['weight-hp']) {
+	if (game.global.spiresCompleted >= 2)
+		localStorage.fluffy = 'yay';
+	toggle_fluffy();
+
+	if (!localStorage.preset) {
 		$$('#preset > *').forEach(function (option: HTMLOptionElement) {
 			option.selected = parseInt(option.innerHTML.replace('z', '')) < game.global.highestLevelCleared;
 		});
-		select_preset($('#preset').value);
+		auto_preset();
 	}
 
 	// He / unlocks
@@ -163,12 +181,17 @@ function read_save() {
 	$('#tauntimp').checked = game.unlocks.imps.Tauntimp;
 	$('#venimp').checked = game.unlocks.imps.Venimp;
 	$('#chronojest').value = prettify(chronojest);
-	$('#prod').value = ($('#prod').value.indexOf('0*') ? '' : '0*') + prettify(prod);
-	$('#loot').value = ($('#loot').value.indexOf('0*') ? '' : '0*') + prettify(loot);
+	$('#prod').value = prettify(prod);
+	$('#loot').value = prettify(loot);
 	$('#breed-timer').value = prettify(game.talents.patience ? 45 : 30);
 }
 
-function parse_inputs(preset: string) {
+function parse_inputs() {
+	let preset = $('#preset').value;
+
+	if (preset == 'trapper' && (!game || game.global.challengeActive != 'Trapper'))
+		throw 'This preset requires a save currently running Trapper². Start a new run using “Trapper² (initial)”, export, and try again.';
+
 	let result = {
 		he_left: input('helium'),
 		zone: parseInt($('#zone').value),
@@ -209,12 +232,14 @@ function parse_inputs(preset: string) {
 	if (preset == 'trapper') {
 		result.mod.soldiers = game.resources.trimps.owned;
 		result.mod.prod = 0;
-		// TODO
-		// special(/trapper/, $('#fixed'), 'phero=0,anti=0,');
+		result.perks.Pheromones.cap = 0;
+		result.perks.Anticipation.cap = 0;
 	}
 
-	if (preset == 'spire')
+	if (preset == 'spire') {
 		result.mod.prod = result.mod.loot = 0;
+		result.perks.Overkill.cap = 0;
+	}
 
 	if (preset == 'carp') {
 		result.mod.prod = result.mod.loot = 0;
@@ -227,12 +252,20 @@ function parse_inputs(preset: string) {
 	if (preset == 'trimp')
 		result.mod.soldiers = 1;
 
-	if (preset == 'metal')
-		result.mod.prod = 0;
+	if (preset == 'nerfed')
+		result.perks.Overkill.cap = 1;
 	
-	// special(/spire/, $('#fixed'), 'overkill=0,');
-	// special(/nerfed/, $('#fixed'), 'overkill=1,');
-	// special(/scientist/, $('#fixed'), 'coord=0,');
+	if (preset == 'scientist')
+		result.perks.Coordinated.cap = 0;
+
+	let max_zone = game ? game.global.highestLevelCleared : 999;
+
+	if ((preset.match(/trimp|coord/) && result.zone >= max_zone / 2)
+			|| (preset === 'trapper' && result.zone >= max_zone - 40))
+		show_alert('warning', 'Your target zone seems too high for this c², try lowering it.');
+
+	if (preset == 'spire' && game && game.global.world != 100 * (2 + game.global.lastSpireCleared))
+		show_alert('warning', 'This preset is meant to be used mid-run, when you’re done farming for the Spire.');
 
 	return result;
 }
@@ -243,37 +276,26 @@ function display(results: any) {
 	$('#results').style.opacity = '1';
 	$('#info').innerText = localStorage.more ? 'Less info' : 'More info';
 	$('#he-left').innerHTML = prettify(he_left) + ' Helium Left Over';
-	$('#perks').innerHTML = perks.filter((p: Perk) => !p.locked).map((perk: Perk) => {
-		let {name, level, cap, spent} = perk;
-		let diff = game ? level - game.portal[perk.name].level : 0;
+	$('#perks').innerHTML = Object.keys(perks).filter(name => !perks[name].locked).map(name => {
+		let {level, cap, spent} = perks[name];
+		let diff = game ? level - game.portal[name].level : 0;
 		let diff_text = diff ? ` (${diff > 0 ? '+' : '-'}${prettify(abs(diff))})` : '';
 		let style = diff > 0 ? 'adding' : diff < 0 ? 'remove' : level >= cap ? 'capped' : '';
 
 		return `<div class='perk ${style} ${localStorage.more}'>`
 			+ `<b>${name.replace('_', ' ')}</b><br>`
 			+ `Level: <b>${prettify(level)}${diff_text}</b><br><span class=more>`
-			+ `Price: ${level >= cap ? '∞' : prettify(perk.cost())}<br>`
+			+ `Price: ${level >= cap ? '∞' : prettify(perks[name].cost())}<br>`
 			+ `Spent: ${prettify(spent)}</span></div>`;
 	}).join('');
 }
 
+document.addEventListener("DOMContentLoaded", validate_fixed, false);
+document.addEventListener("DOMContentLoaded", toggle_fluffy, false);
+document.addEventListener("DOMContentLoaded", auto_preset, false);
+
 function main() {
-	let preset = $('#preset').value;
-
-	if (preset == 'trapper' && (!game || game.global.challengeActive != 'Trapper'))
-		throw 'This preset requires a save currently running Trapper². Start a new run using “Trapper² (initial)”, export, and try again.';
-
-	let inputs = parse_inputs(preset);
-	let max_zone = game ? game.global.highestLevelCleared : 999;
-
-	if ((preset.match(/trimp|coord/) && inputs.zone >= max_zone / 2)
-			|| (preset === 'trapper' && inputs.zone >= max_zone - 40))
-		show_alert('warning', 'Your target zone seems too high for this c², try lowering it.');
-
-	if (preset == 'spire' && game && game.global.world != 100 * (2 + game.global.lastSpireCleared))
-		show_alert('warning', 'This preset is meant to be used mid-run, when you’re done farming for the Spire.');
-
-	display(optimize(inputs));
+	display(optimize(parse_inputs()));
 }
 
 function toggle_info() {
@@ -289,36 +311,36 @@ const add = (perk: Perk, x: number) => 1 + perk.level * x / 100;
 const mult = (perk: Perk, x: number) => pow(1 + x / 100, perk.level);
 
 function parse_perks(fixed: string, unlocks: string) {
-	let perks = [
-		new Perk('Looting_II',     100e3, 10e3, Infinity, 1e4),
-		new Perk('Carpentry_II',   100e3, 10e3, Infinity, 1e4),
-		new Perk('Motivation_II',  50e3,  1e3,  Infinity, 1e4),
-		new Perk('Power_II',       20e3,  500,  Infinity, 1e4),
-		new Perk('Toughness_II',   20e3,  500,  Infinity, 1e4),
-		new Perk('Capable',        1e8,   0,    10,       1e4, 900),
-		new Perk('Cunning',        1e11,  0,    Infinity, 1e4),
-		new Perk('Curious',        1e14,  0,    Infinity, 1e4),
-		new Perk('Overkill',       1e6,   0,    30,       1e4),
-		new Perk('Resourceful',    50e3,  0,    Infinity, 1e6),
-		new Perk('Coordinated',    150e3, 0,    Infinity, 1e4),
-		new Perk('Siphonology',    100e3, 0,    3,        1e4),
-		new Perk('Anticipation',   1000,  0,    10,       1e4),
-		new Perk('Resilience',     100,   0,    Infinity, 1e4),
-		new Perk('Meditation',     75,    0,    7,        1e4),
-		new Perk('Relentlessness', 75,    0,    10,       1e4),
-		new Perk('Carpentry',      25,    0,    Infinity, 1e4),
-		new Perk('Artisanistry',   15,    0,    Infinity, 1e4),
-		new Perk('Range',          1,     0,    10,       1e4),
-		new Perk('Agility',        4,     0,    20,       1e4),
-		new Perk('Bait',           4,     0,    Infinity, 1e7),
-		new Perk('Trumps',         3,     0,    Infinity, 1e8),
-		new Perk('Pheromones',     3,     0,    Infinity, 1e6),
-		new Perk('Packrat',        3,     0,    Infinity, 1e7),
-		new Perk('Motivation',     2,     0,    Infinity, 1e4),
-		new Perk('Power',          1,     0,    Infinity, 1e4),
-		new Perk('Toughness',      1,     0,    Infinity, 1e4),
-		new Perk('Looting',        1,     0,    Infinity, 1e4),
-	];
+	let perks: {[key: string]: Perk} = {
+		Looting_II:     new Perk(100e3, 10e3, Infinity, 1e4),
+		Carpentry_II:   new Perk(100e3, 10e3, Infinity, 1e4),
+		Motivation_II:  new Perk(50e3,  1e3,  Infinity, 1e4),
+		Power_II:       new Perk(20e3,  500,  Infinity, 1e4),
+		Toughness_II:   new Perk(20e3,  500,  Infinity, 1e4),
+		Capable:        new Perk(1e8,   0,    10,       1e4, 900),
+		Cunning:        new Perk(1e11,  0,    Infinity, 1e4),
+		Curious:        new Perk(1e14,  0,    Infinity, 1e4),
+		Overkill:       new Perk(1e6,   0,    30,       1e4),
+		Resourceful:    new Perk(50e3,  0,    Infinity, 1e6),
+		Coordinated:    new Perk(150e3, 0,    Infinity, 1e4),
+		Siphonology:    new Perk(100e3, 0,    3,        1e4),
+		Anticipation:   new Perk(1000,  0,    10,       1e4),
+		Resilience:     new Perk(100,   0,    Infinity, 1e4),
+		Meditation:     new Perk(75,    0,    7,        1e4),
+		Relentlessness: new Perk(75,    0,    10,       1e4),
+		Carpentry:      new Perk(25,    0,    Infinity, 1e4),
+		Artisanistry:   new Perk(15,    0,    Infinity, 1e4),
+		Range:          new Perk(1,     0,    10,       1e4),
+		Agility:        new Perk(4,     0,    20,       1e4),
+		Bait:           new Perk(4,     0,    Infinity, 1e7),
+		Trumps:         new Perk(3,     0,    Infinity, 1e8),
+		Pheromones:     new Perk(3,     0,    Infinity, 1e6),
+		Packrat:        new Perk(3,     0,    Infinity, 1e7),
+		Motivation:     new Perk(2,     0,    Infinity, 1e4),
+		Power:          new Perk(1,     0,    Infinity, 1e4),
+		Toughness:      new Perk(1,     0,    Infinity, 1e4),
+		Looting:        new Perk(1,     0,    Infinity, 1e4),
+	};
 
 	if (!unlocks.match(/>/))
 		unlocks = unlocks.replace(/(?=,|$)/g, '>0');
@@ -331,7 +353,7 @@ function parse_perks(fixed: string, unlocks: string) {
 		let tier2 = m[1].match(/2$|II$/);
 		let name = m[1].replace(/[ _]?(2|II)/i, '').replace(/^OK/i, 'O').replace(/^Looty/i, 'L');
 		let regex = new RegExp(`^${name}[a-z]*${tier2 ? '_II' : ''}$`, 'i');
-		let matches = perks.filter(p => p.name.match(regex));
+		let matches = Object.keys(perks).filter(p => p.match(regex));
 
 		if (matches.length > 1)
 			throw `Ambiguous perk abbreviation: ${m[1]}.`;
@@ -342,11 +364,11 @@ function parse_perks(fixed: string, unlocks: string) {
 		if (!isFinite(level))
 			throw `Invalid number: ${m[3]}.`;
 
-		matches[0].locked = false;
+		perks[matches[0]].locked = false;
 		if (m[2] != '>')
-			matches[0].cap = level;
+			perks[matches[0]].cap = level;
 		if (m[2] != '<')
-			matches[0].must = level;
+			perks[matches[0]].must = level;
 	}
 
 	return perks;
@@ -354,18 +376,18 @@ function parse_perks(fixed: string, unlocks: string) {
 
 function optimize(params: any) {
 	let {he_left, zone, fluffy, perks, weight, mod} = params;
-	let [
+	let {
 		Looting_II, Carpentry_II, Motivation_II, Power_II, Toughness_II,
 		Capable, Cunning, Curious,
 		Overkill, Resourceful, Coordinated, Siphonology, Anticipation,
 		Resilience, Meditation, Relentlessness, Carpentry, Artisanistry,
 		Range, Agility, Bait, Trumps, Pheromones,
 		Packrat, Motivation, Power, Toughness, Looting
-	] = perks;
+	} = perks;
 
-	for (let perk of perks)
-		if (perk.name.endsWith('_II'))
-			perk.pack = pow(10, max(0, floor(log(he_left) / log(100) - 4.2)));
+	for (let name in perks)
+		if ((<any> name).endsWith('_II'))
+			perks[name].pack = pow(10, max(0, floor(log(he_left) / log(100) - 4.2)));
 
 	for (let name of ['whip', 'magn', 'taunt', 'ven'])
 		mod[name] = pow(1.003, zone * 99 * 0.03 * mod[name]);
@@ -528,15 +550,14 @@ function optimize(params: any) {
 	}
 
 	// XP earned by Fluffy over the run
+	fluffy.base = 0;
+	for (let z = 301; z < zone; ++z)
+		fluffy.base += 6 * 50 * pow(1.015, z - 300);
+
 	function xp() {
-		let zone_xp = 50 * add(Cunning, 25) * add(Curious, 60);
-		let total = 0;
-		let cap = 1000 * pow(5, fluffy.prestige) * (mult(Capable, 300) - 1) / 3 - fluffy.xp;
-
-		for (let z = 301; z < zone + 5; ++z)
-			total += (zone_xp *= 1.015);
-
-		return max(0.2, min(total, cap));
+		let total = fluffy.base * add(Cunning, 25) * add(Curious, 60);
+		let cap = 1000 * pow(5, fluffy.prestige) * (mult(Capable, 300) - 1) / 3;
+		return max(0.2, min(total, cap - fluffy.xp));
 	}
 
 	const agility = () => 1 / mult(Agility, -5);
@@ -564,7 +585,8 @@ function optimize(params: any) {
 		let max = 0;
 		let baseline = score();
 
-		for (let perk of perks) {
+		for (let name in perks) {
+			let perk = perks[name];
 			if (perk.locked || perk.level >= perk.cap || perk.cost() > he_left)
 				continue;
 
@@ -592,7 +614,8 @@ function optimize(params: any) {
 	if (!Capable.must)
 		Capable.must = min(10, floor(log(0.003 * fluffy.xp / pow(5, fluffy.prestige) + 1) / log(4)));
 
-	for (let perk of perks) {
+	for (let name in perks) {
+		let perk = perks[name];
 		while (perk.level < perk.must) {
 			let cost = perk.cost();
 			he_left -= cost;
@@ -617,8 +640,8 @@ function optimize(params: any) {
 		best.spent += spent;
 	}
 
-	for (let perk of perks)
-		console.log(perk.name, '=', perk.level);
+	for (let perk in perks)
+		console.log(perk, '=', perks[perk].level);
 
 	return [he_left, perks];
 }

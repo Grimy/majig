@@ -19,7 +19,7 @@ block content
         input#zone(type='text' required pattern='\\d{2,3}' onchange='if (game) update_dg()' data-saved='')
         | Target zone
       label(title='Suggested weights for various situations.')
-        select#preset(onchange='select_preset(this.value)')
+        select#preset(onchange='select_preset(this.value)' data-saved)
           option(disabled)
             | — Normal progression —
           option(value='early')
