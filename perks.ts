@@ -613,7 +613,10 @@ function optimize(params: any) {
 		Bait.cap = 0;
 	
 	if (!Capable.must)
-		Capable.must = min(10, floor(log(0.003 * fluffy.xp / pow(5, fluffy.prestige) + 1) / log(4)));
+		Capable.must = floor(log(0.003 * fluffy.xp / pow(5, fluffy.prestige) + 1) / log(4));
+
+	// Dirty fix
+	Capable.must = min(Capable.must, 10, floor(log(he_left) / log(10) - 7.5));
 
 	for (let name in perks) {
 		let perk = perks[name];
