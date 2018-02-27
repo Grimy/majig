@@ -557,7 +557,7 @@ function optimize(params: any) {
 
 	function xp() {
 		let total = fluffy.base * add(Cunning, 25) * add(Curious, 60);
-		let cap = 1000 * pow(5, fluffy.prestige) * (mult(Capable, 300) - 1) / 3;
+		let cap = Capable.level == 10 ? Infinity : 1000 * pow(5, fluffy.prestige) * (mult(Capable, 300) - 1) / 3;
 		return max(1, min(total, cap - fluffy.xp) + min(total * 7, cap - fluffy.xp));
 	}
 
